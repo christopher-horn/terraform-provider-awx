@@ -1,12 +1,11 @@
 /*
 Use this data source to query Credential by ID.
 
-Example Usage
+# Example Usage
 
 ```hcl
 *TBD*
 ```
-
 */
 package awx
 

@@ -168,3 +168,11 @@ func normalizeYamlOk(s interface{}) (string, bool) {
 	b, _ := yaml.Marshal(j)
 	return string(b[:]), true
 }
+
+func expandIntList(input []interface{}) []int {
+	vs := make([]int, len(input))
+	for i, v := range input {
+		vs[i] = v.(int)
+	}
+	return vs
+}

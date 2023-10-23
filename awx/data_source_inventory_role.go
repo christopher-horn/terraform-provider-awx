@@ -1,20 +1,21 @@
 /*
 *TBD*
 
-Example Usage
+# Example Usage
 
 ```hcl
-resource "awx_inventory" "myinv" {
-  name = "My Inventory"
-  ...
-}
 
-data "awx_inventory_role" "inv_admin_role" {
-  name         = "Admin"
-  inventory_id = data.awx_inventory.myinv.id
-}
+	resource "awx_inventory" "myinv" {
+	  name = "My Inventory"
+	  ...
+	}
+
+	data "awx_inventory_role" "inv_admin_role" {
+	  name         = "Admin"
+	  inventory_id = data.awx_inventory.myinv.id
+	}
+
 ```
-
 */
 package awx
 

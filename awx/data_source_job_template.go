@@ -1,14 +1,15 @@
 /*
 *TBD*
 
-Example Usage
+# Example Usage
 
 ```hcl
-data "awx_job_template" "default" {
-  name = "Default"
-}
-```
 
+	data "awx_job_template" "default" {
+	  name = "Default"
+	}
+
+```
 */
 package awx
 

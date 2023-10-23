@@ -1,14 +1,15 @@
 /*
 *TBD*
 
-Example Usage
+# Example Usage
 
 ```hcl
-resource "awx_organization" "default" {
-  name            = "acc-test"
-}
-```
 
+	resource "awx_organization" "default" {
+	  name            = "acc-test"
+	}
+
+```
 */
 package awx
 

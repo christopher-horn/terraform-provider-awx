@@ -1,15 +1,16 @@
 /*
 *TBD*
 
-Example Usage
+# Example Usage
 
 ```hcl
-data "awx_inventory" "default" {
-  name            = "private_services"
-  organization_id = data.awx_organization.default.id
-}
-```
 
+	data "awx_inventory" "default" {
+	  name            = "private_services"
+	  organization_id = data.awx_organization.default.id
+	}
+
+```
 */
 package awx
 

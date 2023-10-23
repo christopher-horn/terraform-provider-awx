@@ -5,7 +5,7 @@
 
 ```hcl
 
-	data "awx_project" "default" {
+	data "awx_execution_environment" "default" {
 	  name = "Default"
 	}
 
@@ -22,9 +22,9 @@ import (
 	awx "github.com/mrcrilly/goawx/client"
 )
 
-func dataSourceProject() *schema.Resource {
+func dataSourceExecutionEnvironment() *schema.Resource {
 	return &schema.Resource{
-		ReadContext: dataSourceProjectsRead,
+		ReadContext: dataSourceExecutionEnvironmentsRead,
 		Schema: map[string]*schema.Schema{
 			"id": {
 				Type:     schema.TypeInt,
@@ -40,7 +40,7 @@ func dataSourceProject() *schema.Resource {
 	}
 }
 
-func dataSourceProjectsRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func dataSourceExecutionEnvironmentsRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	client := m.(*awx.AWX)
 	params := make(map[string]string)
@@ -58,23 +58,35 @@ func dataSourceProjectsRead(ctx context.Context, d *schema.ResourceData, m inter
 			"Please use one of the selectors (name or group_id)",
 		)
 	}
-	Projects, _, err := client.ProjectService.ListProjects(params)
+	ExecutionEnvironments, _, err := client.ExecutionEnvironmentService.ListExecutionEnvironments(params)
 	if err != nil {
 		return buildDiagnosticsMessage(
-			"Get: Fail to fetch Inventory Group",
-			"Fail to find the group got: %s",
+			"Get: Fail to fetch Execution Environments",
+			"Fail to find the execution environment got: %s",
 			err.Error(),
 		)
 	}
-	if len(Projects) > 1 {
+	if len(ExecutionEnvironments) > 1 {
 		return buildDiagnosticsMessage(
 			"Get: find more than one Element",
-			"The Query Returns more than one Group, %d",
-			len(Projects),
+			"The Query Returns more than one execution environment, %d",
+			len(ExecutionEnvironments),
 		)
 	}
 
-	Project := Projects[0]
-	d = setProjectResourceData(d, Project)
+	ExecutionEnvironment := ExecutionEnvironments[0]
+	d = setExecutionEnvironmentResourceData(d, ExecutionEnvironment)
 	return diags
+}
+
+func setExecutionEnvironmentResourceData(d *schema.ResourceData, r *awx.ExecutionEnvironment) *schema.ResourceData {
+	d.Set("name", r.Name)
+	d.Set("description", r.Description)
+	d.Set("organization", r.Organization)
+	d.Set("image", r.Image)
+	d.Set("managed", r.Managed)
+	d.Set("credential", r.Credential)
+	d.Set("pull", r.Pull)
+	d.SetId(strconv.Itoa(r.ID))
+	return d
 }

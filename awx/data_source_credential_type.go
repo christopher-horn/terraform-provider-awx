@@ -1,18 +1,20 @@
 /*
-Use this data source to query Credential Type by ID.
+Use this data source to query Credential Type by ID or name.
 
-Example Usage
+# Example Usage
 
 ```hcl
-*TBD*
-```
 
+	data "awx_credential_type" "project" {
+	  name = "Project Credentials"
+	}
+
+```
 */
 package awx
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -20,16 +22,18 @@ import (
 	awx "github.com/mrcrilly/goawx/client"
 )
 
-func dataSourceCredentialTypeByID() *schema.Resource {
+func dataSourceCredentialType() *schema.Resource {
 	return &schema.Resource{
-		ReadContext: dataSourceCredentialTypeByIDRead,
+		ReadContext: dataSourceCredentialTypeRead,
 		Schema: map[string]*schema.Schema{
 			"id": {
 				Type:     schema.TypeInt,
-				Required: true,
+				Optional: true,
+				Computed: true,
 			},
 			"name": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 			"description": {
@@ -52,26 +56,50 @@ func dataSourceCredentialTypeByID() *schema.Resource {
 	}
 }
 
-func dataSourceCredentialTypeByIDRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func dataSourceCredentialTypeRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	client := m.(*awx.AWX)
-	id := d.Get("id").(int)
-	credType, err := client.CredentialTypeService.GetCredentialTypeByID(id, map[string]string{})
-	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to fetch credential type",
-			Detail:   fmt.Sprintf("Unable to fetch credential type with ID: %d. Error: %s", id, err.Error()),
-		})
+	params := make(map[string]string)
+
+	if name, ok := d.GetOk("name"); ok {
+		params["name"] = name.(string)
 	}
+
+	if id, ok := d.GetOk("id"); ok {
+		params["id"] = strconv.Itoa(id.(int))
+	}
+
+	if len(params) == 0 {
+		return buildDiagnosticsMessage(
+			"Get: Missing Parameters",
+			"Please use one of the selectors (name or id)",
+		)
+		return diags
+	}
+	ctypes, _, err := client.CredentialTypeService.ListCredentialTypes(params)
+	if err != nil {
+		return buildDiagnosticsMessage(
+			"Get: Fail to fetch credential types",
+			"Fail to find the credential type got: %s",
+			err.Error(),
+		)
+	}
+	if len(ctypes) > 1 {
+		return buildDiagnosticsMessage(
+			"Get: find more than one Element",
+			"The Query Returns more than one credential type, %d",
+			len(ctypes),
+		)
+		return diags
+	}
+	credType := ctypes[0]
 
 	d.Set("name", credType.Name)
 	d.Set("description", credType.Description)
 	d.Set("kind", credType.Kind)
 	d.Set("inputs", credType.Inputs)
 	d.Set("injectors", credType.Injectors)
-	d.SetId(strconv.Itoa(id))
-
+	d.SetId(strconv.Itoa(credType.ID))
 	return diags
 }

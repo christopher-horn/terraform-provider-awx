@@ -1,15 +1,16 @@
 /*
 *TBD*
 
-Example Usage
+# Example Usage
 
 ```hcl
-data "awx_inventory_group" "default" {
-  name         = "k3sPrimary"
-  inventory_id = data.awx_inventory.default.id
-}
-```
 
+	data "awx_inventory_group" "default" {
+	  name         = "k3sPrimary"
+	  inventory_id = data.awx_inventory.default.id
+	}
+
+```
 */
 package awx
 

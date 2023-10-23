@@ -1,14 +1,15 @@
 /*
 *TBD*
 
-Example Usage
+# Example Usage
 
 ```hcl
-data "awx_team" "default" {
-  name = "Default"
-}
-```
 
+	data "awx_team" "default" {
+	  name = "Default"
+	}
+
+```
 */
 package awx
 
