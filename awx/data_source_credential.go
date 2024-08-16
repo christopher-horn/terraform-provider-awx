@@ -1,10 +1,14 @@
 /*
-Use this data source to query Credential by ID.
+Use this data source to query for a Credential by Name or ID.
 
 # Example Usage
 
 ```hcl
-*TBD*
+
+	data "awx_credential" "provisioning_credentials" {
+	  name = "Provisioning Credentials"
+	}
+
 ```
 */
 package awx
@@ -18,13 +22,19 @@ import (
 	awx "github.com/mrcrilly/goawx/client"
 )
 
-func dataSourceCredentialByID() *schema.Resource {
+func dataSourceCredential() *schema.Resource {
 	return &schema.Resource{
-		ReadContext: dataSourceCredentialByIDRead,
+		ReadContext: dataSourceCredentialRead,
 		Schema: map[string]*schema.Schema{
 			"id": {
 				Type:     schema.TypeInt,
-				Required: true,
+				Optional: true,
+				Computed: true,
+			},
+			"name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"tower_id": {
 				Type:     schema.TypeInt,
@@ -42,25 +52,47 @@ func dataSourceCredentialByID() *schema.Resource {
 	}
 }
 
-func dataSourceCredentialByIDRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func dataSourceCredentialRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	client := m.(*awx.AWX)
-	id := d.Get("id").(int)
-	cred, err := client.CredentialsService.GetCredentialsByID(id, map[string]string{})
-	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to fetch credential",
-			Detail:   "The given credential ID is invalid or malformed",
-		})
+	params := make(map[string]string)
+
+	if name, ok := d.GetOk("name"); ok {
+		params["name"] = name.(string)
 	}
 
+	if id, ok := d.GetOk("id"); ok {
+		params["id"] = strconv.Itoa(id.(int))
+	}
+
+	if len(params) == 0 {
+		return buildDiagnosticsMessage(
+			"Get: Missing Parameters",
+			"Please use one of the selectors (name or id)",
+		)
+	}
+	creds, _, err := client.CredentialsService.ListCredentials(params)
+	if err != nil {
+		return buildDiagnosticsMessage(
+			"Get: Fail to fetch credentials",
+			"Fail to find the credential got: %s",
+			err.Error(),
+		)
+	}
+	if len(creds) > 1 {
+		return buildDiagnosticsMessage(
+			"Get: find more than one Element",
+			"The Query Returns more than one credential, %d",
+			len(creds),
+		)
+	}
+	cred := creds[0]
+
+	d.Set("name", cred.Name)
 	d.Set("username", cred.Inputs["username"])
 	d.Set("kind", cred.Kind)
-	d.Set("tower_id", id)
-	d.SetId(strconv.Itoa(id))
-	// d.SetId(strconv.FormatInt(time.Now().Unix(), 10))
-
+	d.Set("tower_id", cred.ID)
+	d.SetId(strconv.Itoa(cred.ID))
 	return diags
 }

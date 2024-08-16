@@ -75,7 +75,6 @@ func dataSourceCredentialTypeRead(ctx context.Context, d *schema.ResourceData, m
 			"Get: Missing Parameters",
 			"Please use one of the selectors (name or id)",
 		)
-		return diags
 	}
 	ctypes, _, err := client.CredentialTypeService.ListCredentialTypes(params)
 	if err != nil {
@@ -91,7 +90,6 @@ func dataSourceCredentialTypeRead(ctx context.Context, d *schema.ResourceData, m
 			"The Query Returns more than one credential type, %d",
 			len(ctypes),
 		)
-		return diags
 	}
 	credType := ctypes[0]
 
