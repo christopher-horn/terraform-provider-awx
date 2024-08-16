@@ -150,7 +150,9 @@ func resourceJobTemplateLaunch() *schema.Resource {
 			},
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(120 * time.Minute),
+			Create: schema.DefaultTimeout(240 * time.Minute),
+			Update: schema.DefaultTimeout(120 * time.Minute),
+			Delete: schema.DefaultTimeout(60 * time.Minute),
 		},
 	}
 }
@@ -165,6 +167,7 @@ func resourceJobTemplateLaunchCreate(ctx context.Context, d *schema.ResourceData
 		return buildDiagNotFoundFail("job template", jobTemplateID, err)
 	}
 
+	timeoutSeconds := 7200 * time.Second
 	params := make(map[string]interface{})
 
 	if p, ok := d.GetOk("job_type"); ok {
@@ -193,6 +196,7 @@ func resourceJobTemplateLaunchCreate(ctx context.Context, d *schema.ResourceData
 	}
 	if p, ok := d.GetOk("timeout"); ok {
 		params["timeout"] = p.(int)
+		timeoutSeconds = time.Duration(p.(int)) * time.Second
 	}
 	if p, ok := d.GetOk("scm_revision"); ok {
 		params["scm_revision"] = p.(string)
@@ -222,7 +226,7 @@ func resourceJobTemplateLaunchCreate(ctx context.Context, d *schema.ResourceData
 	d.SetId(jobID)
 
 	if d.Get("monitor_for_completion").(bool) {
-		_, err = isWaitForJobComplete(ctx, client, jobID)
+		_, err = isWaitForJobComplete(ctx, client, jobID, timeoutSeconds)
 		if err != nil {
 			log.Printf("Job failed %v", err)
 			diags = append(diags, diag.Diagnostic{
@@ -285,7 +289,7 @@ func setJobResourceData(d *schema.ResourceData, r *awx.Job) *schema.ResourceData
 	return d
 }
 
-func isWaitForJobComplete(ctx context.Context, client *awx.AWX, id string) (interface{}, error) {
+func isWaitForJobComplete(ctx context.Context, client *awx.AWX, id string, timeoutSeconds time.Duration) (interface{}, error) {
 	log.Printf("Waiting for job %s to complete ", id)
 
 	stateConf := &resource.StateChangeConf{
@@ -294,7 +298,7 @@ func isWaitForJobComplete(ctx context.Context, client *awx.AWX, id string) (inte
 		Refresh:    isJobRefreshFunc(client, id),
 		Delay:      30 * time.Second,
 		MinTimeout: 10 * time.Second,
-		Timeout:    120 * time.Minute,
+		Timeout:    timeoutSeconds,
 	}
 
 	return stateConf.WaitForStateContext(ctx)
